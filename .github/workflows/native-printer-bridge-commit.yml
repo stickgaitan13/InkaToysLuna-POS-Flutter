@@ -1,0 +1,47 @@
+name: Native Printer Bridge Commit Output
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools/native_printer_bridge/TRIGGER_COMMIT.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compile native bridge with Android SDK
+        shell: bash
+        run: |
+          set -euxo pipefail
+          PLATFORM=$(ls -d "$ANDROID_HOME"/platforms/android-* | sort -V | tail -1)
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          rm -rf tools/native_printer_bridge/build
+          mkdir -p tools/native_printer_bridge/build/classes tools/native_printer_bridge/build/dex tools/native_printer_bridge/output
+          javac -source 8 -target 8 -cp "$PLATFORM/android.jar" -d tools/native_printer_bridge/build/classes \
+            tools/native_printer_bridge/src/com/inkatoys/MainActivity.java \
+            tools/native_printer_bridge/src/com/inkatoys/InkaChromeClient.java
+          "$BUILD_TOOLS/d8" --min-api 21 --lib "$PLATFORM/android.jar" \
+            --output tools/native_printer_bridge/build/dex \
+            tools/native_printer_bridge/build/classes/com/inkatoys/MainActivity.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/InkaChromeClient.class
+          test -s tools/native_printer_bridge/build/dex/classes.dex
+          base64 -w0 tools/native_printer_bridge/build/dex/classes.dex > tools/native_printer_bridge/output/classes.dex.b64
+          sha256sum tools/native_printer_bridge/build/dex/classes.dex > tools/native_printer_bridge/output/classes.dex.sha256
+      - name: Commit compiled DEX output
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/classes.dex.sha256
+          git diff --cached --quiet && exit 0
+          git commit -m "Build native printer bridge DEX [skip ci]"
+          git push
