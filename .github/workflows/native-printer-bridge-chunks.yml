@@ -1,0 +1,48 @@
+name: Native Printer Bridge Export Chunks
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools/native_printer_bridge/TRIGGER_CHUNKS.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export-chunks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compile and split DEX
+        shell: bash
+        run: |
+          set -euxo pipefail
+          PLATFORM=$(ls -d "$ANDROID_HOME"/platforms/android-* | sort -V | tail -1)
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          rm -rf tools/native_printer_bridge/build tools/native_printer_bridge/chunks
+          mkdir -p tools/native_printer_bridge/build/classes tools/native_printer_bridge/build/dex tools/native_printer_bridge/chunks
+          javac -source 8 -target 8 -cp "$PLATFORM/android.jar" -d tools/native_printer_bridge/build/classes \
+            tools/native_printer_bridge/src/com/inkatoys/MainActivity.java \
+            tools/native_printer_bridge/src/com/inkatoys/InkaChromeClient.java
+          "$BUILD_TOOLS/d8" --min-api 21 --lib "$PLATFORM/android.jar" \
+            --output tools/native_printer_bridge/build/dex \
+            tools/native_printer_bridge/build/classes/com/inkatoys/MainActivity.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/InkaChromeClient.class
+          base64 -w0 tools/native_printer_bridge/build/dex/classes.dex > /tmp/classes.dex.b64
+          split -b 6000 -d -a 3 /tmp/classes.dex.b64 tools/native_printer_bridge/chunks/chunk_
+          sha256sum tools/native_printer_bridge/build/dex/classes.dex > tools/native_printer_bridge/chunks/SHA256.txt
+          wc -c /tmp/classes.dex.b64 > tools/native_printer_bridge/chunks/LENGTH.txt
+      - name: Commit chunks
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/native_printer_bridge/chunks
+          git diff --cached --quiet && exit 0
+          git commit -m "Export native printer bridge DEX chunks [skip ci]"
+          git push
