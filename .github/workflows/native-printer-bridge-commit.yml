@@ -39,6 +39,13 @@ jobs:
           split -b 4000 -d -a 3 tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/chunks_v862/chunk_
           wc -c tools/native_printer_bridge/output/classes.dex.b64 > tools/native_printer_bridge/output/chunks_v862/LENGTH.txt
           sha256sum tools/native_printer_bridge/output/classes.dex.b64 > tools/native_printer_bridge/output/chunks_v862/BASE64_SHA256.txt
+      - name: Upload compiled DEX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inka-native-dex
+          path: tools/native_printer_bridge/build/dex/classes.dex
+          if-no-files-found: error
+          retention-days: 7
       - name: Commit compiled DEX output
         shell: bash
         run: |
