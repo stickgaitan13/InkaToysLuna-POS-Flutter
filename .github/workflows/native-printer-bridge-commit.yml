@@ -39,6 +39,7 @@ jobs:
           split -b 4000 -d -a 3 tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/chunks_v862/chunk_
           wc -c tools/native_printer_bridge/output/classes.dex.b64 > tools/native_printer_bridge/output/chunks_v862/LENGTH.txt
           sha256sum tools/native_printer_bridge/output/classes.dex.b64 > tools/native_printer_bridge/output/chunks_v862/BASE64_SHA256.txt
+          printf '%s\n' "${GITHUB_RUN_ID}" > tools/native_printer_bridge/output/LAST_RUN_ID.txt
       - name: Upload compiled DEX artifact
         uses: actions/upload-artifact@v4
         with:
@@ -52,7 +53,7 @@ jobs:
           set -euxo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/classes.dex.lines.txt tools/native_printer_bridge/output/classes.dex.sha256 tools/native_printer_bridge/output/chunks_v862
+          git add tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/classes.dex.lines.txt tools/native_printer_bridge/output/classes.dex.sha256 tools/native_printer_bridge/output/chunks_v862 tools/native_printer_bridge/output/LAST_RUN_ID.txt
           git diff --cached --quiet && exit 0
           git commit -m "Build hardened native storage + printer + device identity bridge DEX [skip ci]"
           git push
