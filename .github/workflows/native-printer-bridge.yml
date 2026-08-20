@@ -27,11 +27,19 @@ jobs:
           mkdir -p tools/native_printer_bridge/build/classes tools/native_printer_bridge/build/dex
           javac -source 8 -target 8 -cp "$PLATFORM/android.jar" -d tools/native_printer_bridge/build/classes \
             tools/native_printer_bridge/src/com/inkatoys/MainActivity.java \
-            tools/native_printer_bridge/src/com/inkatoys/InkaChromeClient.java
+            tools/native_printer_bridge/src/com/inkatoys/InkaChromeClient.java \
+            tools/native_printer_bridge/src/com/inkatoys/StorageBridge.java
           "$BUILD_TOOLS/d8" --min-api 21 --lib "$PLATFORM/android.jar" \
             --output tools/native_printer_bridge/build/dex \
             tools/native_printer_bridge/build/classes/com/inkatoys/MainActivity.class \
-            tools/native_printer_bridge/build/classes/com/inkatoys/InkaChromeClient.class
+            tools/native_printer_bridge/build/classes/com/inkatoys/InkaChromeClient.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/StorageBridge.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/StorageBridge\$UriPrintAdapter.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/StorageBridge\$1.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/StorageBridge\$2.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/StorageBridge\$3.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/StorageBridge\$4.class \
+            tools/native_printer_bridge/build/classes/com/inkatoys/MainActivity\$1.class
           test -s tools/native_printer_bridge/build/dex/classes.dex
           sha256sum tools/native_printer_bridge/build/dex/classes.dex
       - uses: actions/upload-artifact@v4
