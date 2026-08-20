@@ -15,6 +15,7 @@ public class MainActivity extends Activity {
     private static final int STORAGE_TREE_REQ = 6612;
     private WebView webView;
     private StorageBridge storageBridge;
+    private DeviceIdentityBridge deviceIdentityBridge;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +28,9 @@ public class MainActivity extends Activity {
         settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         storageBridge = new StorageBridge(this);
+        deviceIdentityBridge = new DeviceIdentityBridge(this);
         webView.addJavascriptInterface(storageBridge, "InkaStorage");
+        webView.addJavascriptInterface(deviceIdentityBridge, "InkaDevice");
         webView.setWebChromeClient(new InkaChromeClient(this));
         setContentView(webView);
         webView.loadUrl("file:///android_asset/index.html");
