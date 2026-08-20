@@ -16,11 +16,14 @@ import android.webkit.WebView;
 import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class InkaChromeClient extends WebChromeClient {
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final int BT_PERMISSION_REQ = 9091;
     private final MainActivity activity;
+    private final ExecutorService printExecutor = Executors.newSingleThreadExecutor();
 
     public InkaChromeClient(MainActivity activity) {
         this.activity = activity;
@@ -33,7 +36,7 @@ public class InkaChromeClient extends WebChromeClient {
     }
 
     @Override
-    public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
+    public boolean onJsPrompt(final WebView view, String url, String message, String defaultValue, JsPromptResult result) {
         if (message == null) return false;
         try {
             if ("INKA_NATIVE_BLUETOOTH_SETTINGS".equals(message)) {
@@ -49,6 +52,29 @@ public class InkaChromeClient extends WebChromeClient {
             if (message.startsWith("INKA_BT_PING:")) {
                 if (!ensureBtPermission()) { result.confirm("PERMISSION_REQUIRED"); return true; }
                 result.confirm(ping(message.substring("INKA_BT_PING:".length()).trim()));
+                return true;
+            }
+            if (message.startsWith("INKA_BT_PRINT_ASYNC:")) {
+                if (!ensureBtPermission()) { result.confirm("PERMISSION_REQUIRED"); return true; }
+                String body = message.substring("INKA_BT_PRINT_ASYNC:".length());
+                int sep = body.indexOf('|');
+                if (sep <= 0) { result.confirm("ERR:PAYLOAD"); return true; }
+                final String mac = body.substring(0, sep).trim();
+                final byte[] data = android.util.Base64.decode(body.substring(sep + 1).trim(), android.util.Base64.DEFAULT);
+                result.confirm("QUEUED");
+                printExecutor.execute(new Runnable() {
+                    @Override public void run() {
+                        final String printResult = printBytes(mac, data);
+                        activity.runOnUiThread(new Runnable() {
+                            @Override public void run() {
+                                try {
+                                    String escaped = jsonEscape(printResult);
+                                    view.evaluateJavascript("window.INKA_BT_ASYNC_RESULT&&window.INKA_BT_ASYNC_RESULT(\"" + escaped + "\")", null);
+                                } catch (Throwable ignored) {}
+                            }
+                        });
+                    }
+                });
                 return true;
             }
             if (message.startsWith("INKA_BT_PRINT:")) {
@@ -120,7 +146,7 @@ public class InkaChromeClient extends WebChromeClient {
             out = socket.getOutputStream();
             out.write(bytes);
             out.flush();
-            try { Thread.sleep(300); } catch (InterruptedException ignored) {}
+            try { Thread.sleep(220); } catch (InterruptedException ignored) {}
             return "OK";
         } catch (Throwable t) {
             return "ERR:" + safeMessage(t);
