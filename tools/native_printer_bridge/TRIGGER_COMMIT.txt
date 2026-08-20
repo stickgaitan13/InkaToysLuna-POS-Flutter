@@ -1,2 +1,2 @@
-Compile and commit native storage + printer bridge DEX.
-Trigger: 2026-08-20T05:19-05:00 ASYNC-BT-V873-WRAPPED
+Compile and commit native storage + printer + device identity bridge DEX.
+Trigger: 2026-08-20T08:04-05:00 DEVICE-LICENSE-V1
