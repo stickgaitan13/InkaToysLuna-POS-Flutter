@@ -27,11 +27,10 @@ jobs:
           mkdir -p tools/native_printer_bridge/build/classes tools/native_printer_bridge/build/dex tools/native_printer_bridge/output
           javac -source 8 -target 8 -cp "$PLATFORM/android.jar" -d tools/native_printer_bridge/build/classes \
             tools/native_printer_bridge/src/com/inkatoys/MainActivity.java \
-            tools/native_printer_bridge/src/com/inkatoys/InkaChromeClient.java
-          "$BUILD_TOOLS/d8" --min-api 21 --lib "$PLATFORM/android.jar" \
-            --output tools/native_printer_bridge/build/dex \
-            tools/native_printer_bridge/build/classes/com/inkatoys/MainActivity.class \
-            tools/native_printer_bridge/build/classes/com/inkatoys/InkaChromeClient.class
+            tools/native_printer_bridge/src/com/inkatoys/InkaChromeClient.java \
+            tools/native_printer_bridge/src/com/inkatoys/StorageBridge.java
+          find tools/native_printer_bridge/build/classes -name '*.class' -print0 | xargs -0 "$BUILD_TOOLS/d8" --min-api 21 --lib "$PLATFORM/android.jar" \
+            --output tools/native_printer_bridge/build/dex
           test -s tools/native_printer_bridge/build/dex/classes.dex
           base64 -w0 tools/native_printer_bridge/build/dex/classes.dex > tools/native_printer_bridge/output/classes.dex.b64
           sha256sum tools/native_printer_bridge/build/dex/classes.dex > tools/native_printer_bridge/output/classes.dex.sha256
@@ -43,5 +42,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/classes.dex.sha256
           git diff --cached --quiet && exit 0
-          git commit -m "Build native printer bridge DEX [skip ci]"
+          git commit -m "Build native storage + printer bridge DEX [skip ci]"
           git push
