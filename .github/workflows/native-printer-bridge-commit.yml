@@ -33,6 +33,7 @@ jobs:
             --output tools/native_printer_bridge/build/dex
           test -s tools/native_printer_bridge/build/dex/classes.dex
           base64 -w0 tools/native_printer_bridge/build/dex/classes.dex > tools/native_printer_bridge/output/classes.dex.b64
+          fold -w 1000 tools/native_printer_bridge/output/classes.dex.b64 > tools/native_printer_bridge/output/classes.dex.lines.txt
           sha256sum tools/native_printer_bridge/build/dex/classes.dex > tools/native_printer_bridge/output/classes.dex.sha256
           split -b 4000 -d -a 3 tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/chunks_v862/chunk_
           wc -c tools/native_printer_bridge/output/classes.dex.b64 > tools/native_printer_bridge/output/chunks_v862/LENGTH.txt
@@ -43,7 +44,7 @@ jobs:
           set -euxo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/classes.dex.sha256 tools/native_printer_bridge/output/chunks_v862
+          git add tools/native_printer_bridge/output/classes.dex.b64 tools/native_printer_bridge/output/classes.dex.lines.txt tools/native_printer_bridge/output/classes.dex.sha256 tools/native_printer_bridge/output/chunks_v862
           git diff --cached --quiet && exit 0
           git commit -m "Build hardened native storage + printer bridge DEX [skip ci]"
           git push
